@@ -111,8 +111,10 @@ for FILE in $(find ${DIR1} -type f -iname "*.tif"); do
 
   sed -i '1d' ${CSV}
 
-  ogr2ogr -q -sql "SELECT ST_ExteriorRing( geom ) AS geom, source, 0 AS holes FROM footprint" \
+  ogr2ogr -q -sql "SELECT ST_ExteriorRing( geom ) AS geom, source, 0.0 AS area, 0 AS holes FROM footprint" \
     -nln footprint -nlt POLYGON ${ENVELOPE2} ${ENVELOPE1}
+
+  ogrinfo -q -sql "UPDATE footprint SET area = ST_Area( geom )" ${ENVELOPE2}
 
   if [ -z ${CSV} ]; then
 
@@ -131,4 +133,4 @@ TARGET=$(basename ${3})
 
 zip -q -0 ${TARGET} *.jp2* && mv ${TARGET} ..
 
-# rm -rf ${DIR1} ${DIR2}
+rm -rf ${DIR1} ${DIR2}
