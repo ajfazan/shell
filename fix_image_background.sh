@@ -4,7 +4,6 @@
 
 if [ ${#} -ne 2 ]; then
 
-
   printf "Usage:\n\t%s <RGB_TIFF_FILE> <OUT_DIR>\n\n" $(basename ${0})
   return 4
 
@@ -25,5 +24,3 @@ if [ ! -d ${2} ]; then
 fi
 
 fix_rgb_background ${1} ${2}
-
-generate_raster_footprint --overwrite ${TARGET} ${2}
