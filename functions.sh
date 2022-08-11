@@ -75,3 +75,40 @@ fix_rgb_background() {
 
   return 0
 }
+
+fix_rgb_jpeg_collar() {
+
+  ALPHA=$(create_alpha_band ${1} ${2} 1)
+
+  DIR=$(dirname ${ALPHA})
+
+  TARGET="${DIR}/$(basename ${ALPHA} | sed -r 's/\.alpha\.tif$/.tif/')"
+
+  R_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
+  G_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
+  B_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
+
+  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+    --outfile=${R_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
+
+  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+    --outfile=${G_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
+
+  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+    --outfile=${B_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
+
+  wait
+
+  STACK=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
+
+  gdal_merge.py -q -o ${STACK} -ot Byte -of GTiff -separate ${R_BAND} ${G_BAND} ${B_BAND} ${ALPHA}
+
+  gdal_translate -q -b 1 -b 2 -b 3 -mask 4 -ot Byte --config GDAL_TIFF_INTERNAL_MASK YES -of GTiff \
+    -co COMPRESS=JPEG -co JPEG_QUALITY=80 -co PHOTOMETRIC=YCBCR ${STACK} ${TARGET}
+
+  rm -f ${R_BAND} ${G_BAND} ${B_BAND} ${ALPHA} ${STACK}
+
+  generate_raster_footprint --overwrite --alpha ${TARGET} ${DIR}
+
+  return 0
+}
