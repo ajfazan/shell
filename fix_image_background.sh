@@ -5,21 +5,21 @@
 if [ ${#} -ne 2 ]; then
 
   printf "Usage:\n\t%s <RGB_TIFF_FILE> <OUT_DIR>\n\n" $(basename ${0})
-  return 4
+  exit 4
 
 fi
 
 if [ ! -f ${1} ]; then
 
   echo "First input argument must be a file"
-  return 1
+  exit 1
 
 fi
 
 if [ ! -d ${2} ]; then
 
   echo "Second input argument must be a directory"
-  return 2
+  exit 2
 
 fi
 
