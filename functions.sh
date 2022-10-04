@@ -33,7 +33,7 @@ create_alpha_band() {
 
   ALPHA="${DIR}/${LAYER}.alpha.tif"
 
-  gdal_rasterize -q -of GTiff -ot Byte -burn ${3} -l footprint \
+  gdal_rasterize -q -of GTiff -co COMPRESS=LZW -ot Byte -burn ${3} -l footprint \
     -ts ${COLS} ${ROWS} -te ${XMIN} ${YMIN} ${XMAX} ${YMAX} ${FOOTPRINT} ${ALPHA}
 
   rm -f ${FOOTPRINT} ${BBOX} ${CSV1} ${CSV2}
@@ -53,18 +53,18 @@ fix_rgb_background() {
   G_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
   B_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
 
-  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --NoDataValue=0 --outfile=${R_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
-  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --NoDataValue=0 --outfile=${G_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
-  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --NoDataValue=0 --outfile=${B_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
   wait
 
-  gdal_merge.py -q -o ${TARGET} -ot Byte -of GTiff -co COMPRESS=LZW -co TILED=YES \
+  gdal_merge.py -q -o ${TARGET} -ot Byte -of GTiff -co COMPRESS=LZW -co TILED=YES -co BIGTIFF=YES \
     -n 0 -a_nodata 0 -separate ${R_BAND} ${G_BAND} ${B_BAND}
 
   gdal_edit.py -stats -colorinterp_1 red -colorinterp_2 green -colorinterp_3 blue ${TARGET}
@@ -88,20 +88,21 @@ fix_rgb_jpeg_collar() {
   G_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
   B_BAND=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
 
-  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --outfile=${R_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
-  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --outfile=${G_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
-  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet \
+  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --type=Byte --format=GTiff --quiet --co=BIGTIFF=YES \
     --outfile=${B_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
 
   wait
 
   STACK=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
 
-  gdal_merge.py -q -o ${STACK} -ot Byte -of GTiff -separate ${R_BAND} ${G_BAND} ${B_BAND} ${ALPHA}
+  gdal_merge.py -q -o ${STACK} -ot Byte -of GTiff -co BIGTIFF=YES -separate \
+    ${R_BAND} ${G_BAND} ${B_BAND} ${ALPHA}
 
   gdal_translate -q -b 1 -b 2 -b 3 -mask 4 -ot Byte --config GDAL_TIFF_INTERNAL_MASK YES -of GTiff \
     -co COMPRESS=JPEG -co JPEG_QUALITY=80 -co PHOTOMETRIC=YCBCR ${STACK} ${TARGET}
