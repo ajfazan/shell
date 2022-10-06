@@ -15,6 +15,8 @@ create_alpha_band() {
 
   ogrinfo -q -sql "ALTER TABLE '${LAYER}' RENAME TO footprint" ${FOOTPRINT}
 
+  ogrinfo -q -sql "DELETE FROM footprint WHERE ( area < 1.0 )" ${FOOTPRINT}
+
   BBOX=$(mktemp -u -q --tmpdir=${TMPDIR} --suffix=".gpkg" XXXXXXXXXXXXXXXX)
 
   gdaltindex -f GPKG -lyr_name bbox ${BBOX} ${1} 1>/dev/null
