@@ -6,7 +6,8 @@ create_alpha_band() {
 
   DIR=$(realpath ${2})
 
-  generate_raster_footprint --skip-validation --remove-holes --overwrite --nodata 0 ${RASTER} ${DIR}
+  generate_raster_footprint \
+    --skip-validation --remove-holes --overwrite --nodata 0 --sieve 16 ${RASTER} ${DIR}
 
   LAYER=$(basename ${1} | sed -r 's/^(.+)\.(.+)$/\1/')
 
