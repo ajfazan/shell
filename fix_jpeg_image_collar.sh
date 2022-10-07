@@ -23,4 +23,4 @@ if [ ! -d ${2} ]; then
 
 fi
 
-fix_rgb_jpeg_collar ${1} ${2}
+fix_rgb_jpeg_collar $(realpath ${1}) $(realpath ${2})

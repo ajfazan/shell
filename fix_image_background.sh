@@ -23,4 +23,4 @@ if [ ! -d ${2} ]; then
 
 fi
 
-fix_rgb_background ${1} ${2}
+fix_rgb_background $(realpath ${1}) $(realpath ${2})
