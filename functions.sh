@@ -48,29 +48,11 @@ fix_rgb_background() {
 
   ALPHA="${2}/${BASE}.alpha.tif"
 
-  R_BAND=$(mktemp --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
-  G_BAND=$(mktemp --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
-  B_BAND=$(mktemp --tmpdir=${TMPDIR} --suffix=".tif" XXXXXXXXXXXXXXXX)
-
-  gdal_calc.py -A ${1} --A_band=1 -B ${ALPHA} --B_band=1 --format=GTiff --co=BIGTIFF=YES \
-    --type=Byte --quiet --overwrite --outfile=${R_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
-
-  gdal_calc.py -A ${1} --A_band=2 -B ${ALPHA} --B_band=1 --format=GTiff --co=BIGTIFF=YES \
-    --type=Byte --quiet --overwrite --outfile=${G_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
-
-  gdal_calc.py -A ${1} --A_band=3 -B ${ALPHA} --B_band=1 --format=GTiff --co=BIGTIFF=YES \
-    --type=Byte --quiet --overwrite --outfile=${B_BAND} --calc="( B != 0 ) * ( A + ( A == 0 ) )" &
-
-  wait
+  raster_calc --overwrite --compress --stats --nodata 0 --mask ${ALPHA} ${1} ${2}
 
   TARGET="${2}/${BASE}.tif"
 
-  gdal_merge.py -q -o ${TARGET} -ot Byte -of GTiff -co COMPRESS=LZW -co TILED=YES -co BIGTIFF=YES \
-    -n 0 -a_nodata 0 -separate ${R_BAND} ${G_BAND} ${B_BAND}
-
-  gdal_edit.py -stats -colorinterp_1 red -colorinterp_2 green -colorinterp_3 blue ${TARGET}
-
-  rm -f ${R_BAND} ${G_BAND} ${B_BAND} ${ALPHA}
+  rm -f ${ALPHA}
 
   generate_raster_footprint --overwrite ${TARGET} ${2}
 
