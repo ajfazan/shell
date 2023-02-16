@@ -48,7 +48,7 @@ fix_rgb_background() {
 
   ALPHA="${2}/${BASE}.alpha.tif"
 
-  raster_calc --overwrite --compress --stats --nodata 0 --mask ${ALPHA} ${1} ${2}
+  raster_calc --overwrite --compress --stats --nodata 0 --backfix ${ALPHA} ${1} ${2}
 
   TARGET="${2}/${BASE}.tif"
 
